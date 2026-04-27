@@ -130,15 +130,123 @@ rate(atm_requests_total{status=~"5.."}[5m]) / rate(atm_requests_total[5m])
 
 ## 支援的工具
 
-任何支援 `OPENAI_BASE_URL` 的工具都可以直接使用：
+任何支援 `OPENAI_BASE_URL` 或 `ANTHROPIC_BASE_URL` 的工具都可以直接使用：
 
 | 工具 | 偵測方式 |
 |---|---|
 | [Cursor](https://cursor.sh) | `User-Agent: cursor` |
 | [OpenCode](https://opencode.ai) | `User-Agent: opencode` |
+| [Claude Code](https://claude.ai/code) | `User-Agent: claude` |
 | [Aider](https://aider.chat) | `User-Agent: aider` |
 | [Continue](https://continue.dev) | `User-Agent: continue` |
 | 任何 OpenAI 相容 SDK | 標記為 `unknown` |
+
+---
+
+## 在 OpenCode 中使用
+
+安裝腳本會自動設定 `OPENAI_BASE_URL` 和 `ANTHROPIC_BASE_URL`，重新載入 shell 後 OpenCode 即可直接使用：
+
+```bash
+source ~/.zshrc
+opencode   # 所有 API 呼叫都會透過 ATM 轉發
+```
+
+若需手動設定，在 `opencode.json`（專案根目錄或 `~/.config/opencode/opencode.json`）加入 `provider` 設定：
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "anthropic": {
+      "options": {
+        "baseURL": "http://localhost:40080"
+      }
+    },
+    "openai": {
+      "options": {
+        "baseURL": "http://localhost:40080"
+      }
+    }
+  }
+}
+```
+
+若要透過 ATM 使用自訂 OpenAI 相容供應商（例如 GitHub Copilot）：
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "my-provider-via-atm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "My Provider via ATM",
+      "options": {
+        "baseURL": "http://localhost:40080",
+        "headers": {
+          "Authorization": "Bearer $MY_API_KEY"
+        }
+      },
+      "models": {
+        "my-model": { "name": "my-model" }
+      }
+    }
+  }
+}
+```
+
+Token 使用量在 metrics 中會以 `tool="opencode"` 顯示。
+
+---
+
+## 在 Claude Code 中使用
+
+安裝腳本會自動設定 `ANTHROPIC_BASE_URL`，重新載入 shell 後即可追蹤所有 `claude` CLI 呼叫：
+
+```bash
+source ~/.zshrc
+claude   # 所有 Anthropic API 呼叫都會透過 ATM 轉發
+```
+
+若需手動設定：
+
+```bash
+export ANTHROPIC_BASE_URL=http://localhost:40080
+claude
+```
+
+或寫入 `~/.claude/settings.json` 永久生效：
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:40080"
+  }
+}
+```
+
+Token 使用量在 metrics 中會以 `tool="claude"` 顯示。
+
+> **注意：** 當 `ANTHROPIC_BASE_URL` 指向非 Anthropic 官方主機時，Claude Code 會停用 MCP tool search 功能。Claude Code 本身的工具（Bash、檔案讀寫等）不受影響。
+
+---
+
+## 確認追蹤正常運作
+
+透過任何 AI 工具送出請求後：
+
+```bash
+curl -s http://localhost:40080/metrics | grep atm_tokens_total
+```
+
+預期輸出：
+
+```
+atm_tokens_total{model="claude-sonnet-4-5",tool="claude",type="input",user_id="mymac-alice"} 1234
+atm_tokens_total{model="claude-sonnet-4-5",tool="claude",type="output",user_id="mymac-alice"} 567
+```
+
+若 `tool` 顯示 `unknown`，請參考[常見問題](#常見問題)。
 
 ---
 

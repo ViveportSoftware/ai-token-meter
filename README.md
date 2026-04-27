@@ -128,15 +128,123 @@ rate(atm_requests_total{status=~"5.."}[5m]) / rate(atm_requests_total[5m])
 
 ## Supported tools
 
-ATM works with any tool that respects `OPENAI_BASE_URL`:
+ATM works with any tool that respects `OPENAI_BASE_URL` or `ANTHROPIC_BASE_URL`:
 
 | Tool | Detection |
 |---|---|
 | [Cursor](https://cursor.sh) | `User-Agent: cursor` |
 | [OpenCode](https://opencode.ai) | `User-Agent: opencode` |
+| [Claude Code](https://claude.ai/code) | `User-Agent: claude` |
 | [Aider](https://aider.chat) | `User-Agent: aider` |
 | [Continue](https://continue.dev) | `User-Agent: continue` |
 | Any OpenAI-compatible SDK | tracked as `unknown` |
+
+---
+
+## Using with OpenCode
+
+The install script sets both `OPENAI_BASE_URL` and `ANTHROPIC_BASE_URL` automatically, so OpenCode works out of the box after a shell reload:
+
+```bash
+source ~/.zshrc
+opencode   # all API calls routed through ATM
+```
+
+To configure manually, add a `provider` entry to your `opencode.json` (project root or `~/.config/opencode/opencode.json`):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "anthropic": {
+      "options": {
+        "baseURL": "http://localhost:40080"
+      }
+    },
+    "openai": {
+      "options": {
+        "baseURL": "http://localhost:40080"
+      }
+    }
+  }
+}
+```
+
+For custom OpenAI-compatible providers (e.g. GitHub Copilot routed through ATM):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "my-provider-via-atm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "My Provider via ATM",
+      "options": {
+        "baseURL": "http://localhost:40080",
+        "headers": {
+          "Authorization": "Bearer $MY_API_KEY"
+        }
+      },
+      "models": {
+        "my-model": { "name": "my-model" }
+      }
+    }
+  }
+}
+```
+
+Token usage appears as `tool="opencode"` in metrics.
+
+---
+
+## Using with Claude Code
+
+The install script sets `ANTHROPIC_BASE_URL` automatically. After a shell reload, all `claude` CLI calls are tracked:
+
+```bash
+source ~/.zshrc
+claude   # all Anthropic API calls routed through ATM
+```
+
+To configure manually:
+
+```bash
+export ANTHROPIC_BASE_URL=http://localhost:40080
+claude
+```
+
+Or persist it in `~/.claude/settings.json`:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:40080"
+  }
+}
+```
+
+Token usage appears as `tool="claude"` in metrics.
+
+> **Note:** Claude Code disables MCP tool search when `ANTHROPIC_BASE_URL` points to a non-first-party host. Claude Code's own tools (Bash, file read/write, etc.) are unaffected.
+
+---
+
+## Verify tracking is working
+
+After sending a request through any AI tool:
+
+```bash
+curl -s http://localhost:40080/metrics | grep atm_tokens_total
+```
+
+Expected output:
+
+```
+atm_tokens_total{model="claude-sonnet-4-5",tool="claude",type="input",user_id="mymac-alice"} 1234
+atm_tokens_total{model="claude-sonnet-4-5",tool="claude",type="output",user_id="mymac-alice"} 567
+```
+
+If `tool` shows `unknown`, see [Troubleshooting](#troubleshooting).
 
 ---
 
