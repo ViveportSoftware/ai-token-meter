@@ -102,7 +102,8 @@ Restart `atm` after any config change.
 
 ## Metrics
 
-All metrics are exposed at `http://localhost:40080/metrics` in Prometheus format.
+By default, metrics are exposed at `http://localhost:40080/metrics` in Prometheus format.
+If `otel.push_endpoint` is set, ATM runs in push mode and `GET /metrics` returns `410 Gone`.
 
 | Metric | Type | Labels |
 |---|---|---|
@@ -322,6 +323,7 @@ If `tool` shows `unknown`, see [Troubleshooting](#troubleshooting).
 
 **No metrics appearing**
 - Check proxy is up: `curl http://localhost:40080/health`
+- If `/metrics` returns `410 Gone`, check whether `otel.push_endpoint` is enabled (push mode disables pull scraping)
 
 **Claude Code: "MCP server search disabled"**
 - This is expected when `ANTHROPIC_BASE_URL` points to a non-first-party host. Claude Code's own tools (Bash, file read/write) are unaffected.
