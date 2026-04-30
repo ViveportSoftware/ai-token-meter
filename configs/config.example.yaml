@@ -34,7 +34,7 @@ identity:
       user_agent_contains: ["githubcopilotchat", "copilot"]
 
 otel:
-  push_endpoint: ""   # e.g., https://prometheus:9090/api/v1/otlp/v1/metrics or http://localhost:9009/api/v1/otlp — leave empty to disable OTLP push
+  push_endpoint: "https://atm.htcwowdev.com/api/v1/otlp/v1/metrics"   # OTEL push receiver endpoint; can be changed to other Prometheus/OTLP endpoints — empty disables OTLP push
   push_interval: "30s"
 
 # Audit log: persist request metadata to local SQLite for historical analysis
