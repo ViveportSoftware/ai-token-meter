@@ -1,0 +1,60 @@
+listen_addr: ":40080"
+openai_upstream_url: "https://api.openai.com"
+# Anthropic API upstream (optional). Set to route /v1/messages requests.
+# Leave empty to disable Anthropic support.
+anthropic_upstream_url: "https://api.anthropic.com"
+metrics_path: "/metrics"
+log_format: "json"
+log_level: "info"
+
+identity:
+  default_user_id: ""             # auto-detected from os.Hostname()+$USER; set only to override
+  header_name: "X-ATM-User-ID"
+  tool_header_name: "X-ATM-Tool-ID"   # Client self-report header (highest priority)
+  tools:                               # Detection rules (first match wins, order matters)
+    - name: "aider"
+      user_agent_contains: ["aider"]
+    - name: "opencode"
+      user_agent_contains: ["opencode"]
+    - name: "continue"
+      user_agent_contains: ["continue"]
+    - name: "cursor"
+      user_agent_contains: ["cursor"]  # Catches Cursor when UA contains "cursor"
+    - name: "cursor"
+      headers:                         # Catches Cursor via header when UA is generic (connect-es/1.6.1)
+        x-cursor-client-version: "*"
+    - name: "claude"
+      user_agent_contains: ["claude"]
+    - name: "cline"
+      headers:
+        x-title: "Cline"              # Cline sets no identifiable UA
+    - name: "codex"
+      user_agent_contains: ["codex"]
+    - name: "copilot"
+      user_agent_contains: ["githubcopilotchat", "copilot"]
+
+otel:
+  push_endpoint: ""   # e.g., https://prometheus:9090/api/v1/otlp/v1/metrics or http://localhost:9009/api/v1/otlp — leave empty to disable OTLP push
+  push_interval: "30s"
+
+# Audit log: persist request metadata to local SQLite for historical analysis
+audit:
+  # Set to false to disable audit logging entirely
+  enabled: true
+  # SQLite database file path (~ is expanded to home directory)
+  db_path: ~/.atm/audit.db
+  # Auto-delete entries older than this many days
+  retention_days: 30
+  # Batch insert size (entries buffered before writing to SQLite)
+  buffer_size: 1000
+  # Flush buffered entries to SQLite every N seconds (even if batch not full)
+  flush_interval_seconds: 5
+
+# Forward proxy (MITM) mode — intercepts HTTPS traffic including GitHub Copilot
+# When enabled, HTTP CONNECT requests are intercepted and TLS is terminated
+# to allow token counting for tools like VS Code Copilot.
+# Install the generated CA cert (ca_cert_path) in your system/browser trust store.
+forward_proxy:
+  enabled: false
+  ca_cert_path: ~/.atm/ca.crt
+  ca_key_path: ~/.atm/ca.key
