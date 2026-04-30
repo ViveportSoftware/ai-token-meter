@@ -29,13 +29,13 @@ ATM sits between your AI tools and the LLM provider. It is **completely transpar
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ViveportSoftware/ai-token-meter/main/scripts/install.sh | bash
+curl -fsSL https://github.com/ViveportSoftware/ai-token-meter/releases/latest/download/install.sh | bash
 ```
 
 The installer:
 - Downloads the correct binary for your OS and architecture
 - Installs to `~/.local/bin/atm`
-- Writes a default config to `~/.config/atm/config.yaml`
+- Writes a default config to `~/.atm/config.yaml`
 - Sets `OPENAI_API_BASE=http://localhost:40080` in your shell profile
 - Sets `ANTHROPIC_BASE_URL=http://localhost:40080` in your shell profile
 
@@ -56,14 +56,14 @@ curl http://localhost:40080/health
 ### Uninstall
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ViveportSoftware/ai-token-meter/main/scripts/install.sh | bash -s -- --uninstall
+curl -fsSL https://github.com/ViveportSoftware/ai-token-meter/releases/latest/download/install.sh | bash -s -- --uninstall
 ```
 
 ---
 
 ## Configuration
 
-Config lives at `~/.config/atm/config.yaml`. Edit it to match your setup:
+Config lives at `~/.atm/config.yaml`. Edit it to match your setup:
 
 ```yaml
 listen_addr: ":40080"
@@ -73,7 +73,7 @@ log_level: "info"
 
 audit:
   enabled: true
-  db_path: ~/.local/share/atm/audit.db
+  db_path: ~/.atm/audit.db
   retention_days: 30
 ```
 
@@ -90,13 +90,13 @@ Restart `atm` after any config change.
 | `log_level` | `info` | `debug` / `info` / `warn` / `error` |
 | `log_format` | `json` | `json` / `text` |
 | `audit.enabled` | `true` | Persist request metadata to SQLite |
-| `audit.db_path` | `~/.local/share/atm/audit.db` | SQLite database file path |
+| `audit.db_path` | `~/.atm/audit.db` | SQLite database file path |
 | `audit.retention_days` | `30` | Auto-delete entries older than N days |
 | `audit.buffer_size` | `1000` | Batch insert size |
 | `audit.flush_interval_seconds` | `5` | Max seconds before flushing buffer |
 | `forward_proxy.enabled` | `false` | Enable MITM forward proxy mode (for Copilot) |
-| `forward_proxy.ca_cert_path` | `~/.config/atm/ca.crt` | CA certificate for TLS interception |
-| `forward_proxy.ca_key_path` | `~/.config/atm/ca.key` | CA private key |
+| `forward_proxy.ca_cert_path` | `~/.atm/ca.crt` | CA certificate for TLS interception |
+| `forward_proxy.ca_key_path` | `~/.atm/ca.key` | CA private key |
 
 ---
 
@@ -261,8 +261,8 @@ GitHub Copilot does not respect `OPENAI_API_BASE`. To track Copilot usage, ATM i
 ```yaml
 forward_proxy:
   enabled: true
-  ca_cert_path: ~/.config/atm/ca.crt
-  ca_key_path: ~/.config/atm/ca.key
+  ca_cert_path: ~/.atm/ca.crt
+  ca_key_path: ~/.atm/ca.key
 ```
 
 2. Start ATM — it generates a CA certificate on first run.
@@ -271,7 +271,7 @@ forward_proxy:
 
 ```bash
 # macOS
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/.config/atm/ca.crt
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/.atm/ca.crt
 ```
 
 4. Configure VS Code to use ATM as HTTPS proxy:
@@ -311,11 +311,11 @@ If `tool` shows `unknown`, see [Troubleshooting](#troubleshooting).
 
 **Proxy not starting**
 - Check `openai_upstream_url` is reachable: `curl https://api.openai.com`
-- Run with debug logging: `atm --debug`
+- Run with debug logging: `atm -debug`
 
 **User ID shows as `anonymous`**
 - Reload your shell: `source ~/.zshrc`
-- Check: `echo $ATM_USER_ID`
+- Check your config: `cat ~/.atm/config.yaml | grep default_user_id`
 
 **tool shows as `unknown`**
 - For tools with no identifiable User-Agent, add a detection rule in `identity.tools` or set `X-ATM-Tool-ID` header
